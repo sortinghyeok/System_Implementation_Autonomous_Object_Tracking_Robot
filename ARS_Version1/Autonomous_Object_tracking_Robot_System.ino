@@ -59,6 +59,7 @@ struct SensorData{
 
 #define queue_idx_size 10
 int queue_idx = 0;
+int prev_idx = 0;
 float distance_circular_queue[10];
 
 void obstacle_distance_process(void)
@@ -69,7 +70,9 @@ void obstacle_distance_process(void)
   digitalWrite(trig, LOW);
   return_time = pulseIn(echo, HIGH);
   distance = ((float)(340*return_time)/10000)/2;
-  distance_circular_queue[(queue_idx++)%queue_idx_size] = distance;
+  distance_circular_queue[queue_idx] = distance;
+  prev_idx = queue_idx;
+  queue_idx = (queue_idx + 1) % queue_idx_size;
 }
 
 struct TargetObject target_camera_data_parser(){
@@ -154,7 +157,7 @@ void test_sensor_input(){
   Serial.print("\nheight : ");
   Serial.print(sensor_data.target_object_info.height);
   Serial.print("\ndistance : ");
-  Serial.print(sensor_data.fov_distances[0]);
+  Serial.print(sensor_data.fov_distances[prev_idx]);
 }
 
 void setup() {
@@ -167,5 +170,5 @@ void setup() {
 void loop() {
   delay(1000);
   SensorData sensor_data = sensor_data_process();
-  //test_sensor_input();
+  test_sensor_input();
 }
