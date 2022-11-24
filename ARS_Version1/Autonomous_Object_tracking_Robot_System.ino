@@ -12,6 +12,8 @@ Pixy2 pixy;
 #define line_pin_middle 9
 #define line_pin_right 10
 
+#define fov_center 315/2
+
 int motorA_vector = 1;
 
 void enable_camera_interface(){
@@ -61,6 +63,12 @@ struct SensorData{
 int queue_idx = 0;
 int prev_idx = 0;
 float distance_circular_queue[10];
+
+struct ProcessOutput{
+  float speed;
+  float direction;
+  byte on_or_off;
+}
 
 void obstacle_distance_process(void)
 {
@@ -137,6 +145,102 @@ void motor_control_test(){
   digitalWrite(M_IN2, motorA_vector);
 }
 
+struct ProcessOutput object_tracking_process(SensorData sensor_data){
+  byte on_or_off = 0;
+  byte direction = 0; // 0 : left, 1 : right
+
+  if(sensor_data.target_object_info.signature == 1)
+    on_or_off = 1;
+  else
+    on_or_off = 0;
+
+  Serial.print("\non_or_off");
+  Serial.print(on_or_off);
+  Serial.print("\signature");
+  Serial.print(signature);
+  float current_position_x = sensor_data.target_object_info.pos_x;
+  if(current_position_x <= fov_center)
+    direction = 0;
+  else
+    direction = 1;
+  Serial.print("\ndirection");
+  Serial.print(direction);
+  float multiplied_number = 60.0/315.0;
+  float radius = current_position_x * multiplied_number;
+  Serial.print("\nmultiplied");
+  Serial.print(multiplied_number);
+  Serial.print("\nradius");
+  
+  if(direction == 1)
+    radius = radius - 30;
+  else
+    radius = 30 - radius;
+
+  float revolving_ratio = radius/90.0;
+  Serial.print(radius);
+  //float spin_radius = radius/2 * sin(radians(radius/2));
+
+ //To Do : Kalman Filter
+  ProcessOutput process_output;
+  process_output.speed = 60; //To Do. get speed from kalman filter
+  process_output.direction = revolving_ratio;
+  process_output.on_or_off = on_or_off;
+  
+  return process_output;
+}
+
+float line_tracking_process(SensorData sensor_data){
+  byte on_or_off = 0;
+  byte direction = 0; // -1 : left, 0 : middle, 1 : right
+
+  if(sensor_data.target_object_info.signature == 1)
+    on_or_off = 0; //target이 있을 경우 라인 추적 off
+  else
+    on_or_off = 1;
+
+  if(sensor_data.lines_info.line_middle)
+    direction = 0;
+  if(sensor_data.lines_info.line_left)
+    direction -= 1;
+  if(sensor_data.lines_info.line_right)
+    direction += 1
+
+  float revolving_ratio = (float)direction/3.0;
+  return revolving_ratio;
+}
+
+void hazard_prevention_process(SensorData sensor_data){
+  byte on_or_off = 0;
+  byte is_obstacle = 0;
+  float speed = 0;
+  float revolving_ratio = 0;
+  //To Do : Kalman Filter로 distance 구하기
+  if(distance_circular_queue[prev_idx] < 20.0 && distance_circular_queue[prev_idx] > 10.0)
+  {
+    speed = distance_circular_queue[prev_idx]/4.0;
+  }
+  else if(distance_circular_queue[prev_idx] <= 10.0)
+  {
+    speed = 0;
+  }
+
+  if(sensor_data.target_object_info.signature == 0)
+  {
+    is_obstacle = 1;
+  }
+
+  while(prev_idx != 9)
+  {
+    obstacle_distance_process();
+  }
+
+  //To Do : Kalman Filter후 Direction Revolving Ratio 결정하여 Return
+}
+
+void priority_maker(){
+
+}
+
 void test_sensor_input(){
   delay(1000);
   SensorData sensor_data = sensor_data_process();
@@ -170,5 +274,6 @@ void setup() {
 void loop() {
   delay(1000);
   SensorData sensor_data = sensor_data_process();
-  test_sensor_input();
+  //test_sensor_input();
+  object_tracking_process(sensor_data);
 }
