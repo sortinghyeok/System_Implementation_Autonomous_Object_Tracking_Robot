@@ -132,7 +132,8 @@ float average_filter(){
   {
     average_speed += distance_circular_queue[i];
   }
-  return average_speed/(float)queue_idx_size;
+  average_speed = average_speed/(float)queue_idx_size;
+  return average_speed;
 }
 
 struct Lines line_location_process(){
