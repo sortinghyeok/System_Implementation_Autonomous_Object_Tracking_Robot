@@ -126,7 +126,7 @@ struct TargetObject target_camera_data_parser(){
   }
 }
 
-float average_filter(){
+float mean_filter(){
   float average_speed = 0;
   for(int i = 0; i<queue_idx_size; i++)
   {
@@ -198,7 +198,7 @@ struct ProcessOutput object_tracking_process(SensorData sensor_data){
   //float spin_radius = radius/2 * sin(radians(radius/2));
 
   ProcessOutput process_output;
-  float distance = average_filter();
+  float distance = mean_filter();
   if(distance < 20.0)
   {
     on_or_off = 0;
@@ -252,14 +252,14 @@ struct ProcessOutput hazard_prevention_process(SensorData sensor_data){
   int on_or_off = 0;
   float speed = 0.0;
   float revolving_ratio = 0.0;
-  float distance = average_filter();
+  float distance = mean_filter();
   float instance_distance = distance_circular_queue[prev_idx];
   Serial.print("prev distance : ");
   Serial.println(distance);
   if (distance - 30.0 >= instance_distance)
   {
     obstacle_distance_process();
-    distance = average_filter();
+    distance = mean_filter();
   }
   Serial.print("after distance : ");
   Serial.println(distance);
