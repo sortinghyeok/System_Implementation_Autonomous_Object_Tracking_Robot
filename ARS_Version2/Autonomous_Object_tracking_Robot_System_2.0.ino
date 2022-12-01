@@ -160,7 +160,7 @@ struct SensorData sensor_data_process(){
   return sensor_data;
 }
 
-float get_radius(uint16_t pos_x){
+float get_angle(uint16_t pos_x){
   int direction;
   if(pos_x <= fov_center)
     direction = -1;
@@ -169,19 +169,19 @@ float get_radius(uint16_t pos_x){
   float multiplied_number = 60.0/315.0;
   //Serial.print("number : ");
   //Serial.println(multiplied_number);
-  float radius = pos_x * multiplied_number;
+  float angle = pos_x * multiplied_number;
   //Serial.print("radius : ");
   //Serial.println(radius);
   
-  if(radius > 30.0)
+  if(angle > 30.0)
   {
-    radius = radius - 30.0;
-    return radius * 1.0;
+    angle = angle - 30.0;
+    return angle * 1.0;
   }
   else
   {
-    radius = (30.0 - radius);
-    return radius * (-1.0);
+    angle = (30.0 - angles);
+    return angle * (-1.0);
   }
 }
 
@@ -193,8 +193,8 @@ struct ProcessOutput object_tracking_process(SensorData sensor_data){
     on_or_off = 0;
 
   uint16_t current_position_x = sensor_data.target_object_info.pos_x;
-  float radius = get_radius(current_position_x);
-  float revolving_ratio = radius/30.0;
+  float angle = get_angle(current_position_x);
+  float revolving_ratio = angle/30.0;
   //float spin_radius = radius/2 * sin(radians(radius/2));
 
   ProcessOutput process_output;
@@ -283,8 +283,8 @@ struct ProcessOutput hazard_prevention_process(SensorData sensor_data){
   }
 
   uint16_t current_position_x = sensor_data.target_object_info.pos_x;
-  float radius = get_radius(current_position_x);
-  revolving_ratio = radius/30.0;
+  float angle = get_angle(current_position_x);
+  revolving_ratio = angle/30.0;
 
   ProcessOutput process_output;
   process_output.direction = revolving_ratio;
