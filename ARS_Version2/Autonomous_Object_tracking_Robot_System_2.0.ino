@@ -127,13 +127,13 @@ struct TargetObject target_camera_data_parser(){
 }
 
 float mean_filter(){
-  float average_speed = 0;
+  float average_distance = 0;
   for(int i = 0; i<queue_idx_size; i++)
   {
-    average_speed += distance_circular_queue[i];
+    average_distance += distance_circular_queue[i];
   }
-  average_speed = average_speed/(float)queue_idx_size;
-  return average_speed;
+  float filtered_distance = average_speed/(float)queue_idx_size;
+  return filtered_distance;
 }
 
 struct Lines line_location_process(){
