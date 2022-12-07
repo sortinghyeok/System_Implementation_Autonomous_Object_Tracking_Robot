@@ -98,7 +98,7 @@ void get_distance()
   queue_idx = (queue_idx + 1) % queue_idx_size;
 }
 
-void obstacle_distance_process()
+void stack_distance()
 {
   for(int i = 0; i<queue_idx_size; i++)
   {
@@ -154,7 +154,7 @@ struct SensorData sensor_data_process(){
   SensorData sensor_data;
   sensor_data.lines_info = line_location_process();
   sensor_data.target_object_info = target_camera_data_parser();
-  obstacle_distance_process();
+  stack_distance();
   sensor_data.fov_distances = distance_circular_queue;
 
   return sensor_data;
@@ -258,7 +258,7 @@ struct ProcessOutput hazard_prevention_process(SensorData sensor_data){
   Serial.println(distance);
   if (distance - 30.0 >= instance_distance)
   {
-    obstacle_distance_process();
+    stack_distance();
     distance = mean_filter();
   }
   Serial.print("after distance : ");
