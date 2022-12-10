@@ -1,6 +1,7 @@
-# Autonomous Object Tracking Robot의 pixy camera 드라이버 Level 솔루션(Atmega128 등)
+# pixy Camera Driver Level 솔루션(Atmega128 등)
 
 ## 목표
+- pixy library의 사용 불가시 솔루션 제시
 - 하드웨어 기기 주변 환경 고려, 특정 색 추적 이후 다음 차순위 태스크를 수행하는 마이너한 수준의 알고리즘 개발 지향
 
 ## 사용한 부품
@@ -10,14 +11,10 @@
 
 1. Avrdude
 
-![image](https://user-images.githubusercontent.com/80696846/174485770-6edc566d-c01e-451f-9e70-b5aa753ec5dc.png)
-
 - 본래 아두이노의 마이크로프로세서는 avr계열이므로, 코드 업로드를 위해  해당 라이브러리가 필요.
 - 단, 업로드 이전에 usbasp를 통한 부트로더 업로드가 선행되어야 할 것.
 
 2. Megacore
-
-![image](https://user-images.githubusercontent.com/80696846/174485779-20d20092-f09f-48db-917e-79652069a8f7.png)
 
 Atmega128은 기본적으로 아두이노 라이브러리와 호환되지 않음.
 (추측으로는 아마 아두이노가 16비트를 표준으로 사용하고, 비트스트림이 맞지 않으면 유실이 생겨 해당 mcu를 타겟으로 만들지 않은 것으로 보임)
@@ -43,7 +40,8 @@ atmega128 프로세서와 arduino의 호환에서 생기로 보이는 이슈가 
 
 ![image](https://user-images.githubusercontent.com/80696846/174485662-7c5bfcf8-64c4-401f-afc1-33c3960b4ec1.png)
 
-curLoc 변수를 통해 이전까지 갱신되었던 좌표를 임시 저장하고, 새로 직렬 통신으로 받아들인 좌표 값을 X_center global variable에 저장
+curLoc 변수를 통해 이전까지 갱신되었던 좌표를 임시 저장하고, 새로 직렬 통신으로 받아들인 좌표 값을 X_center global variable에 저장.
+
 만일 이전까지 개체의 상태가 카메라의 우측단에 존재했었는데, 현재 갱신된 개체의 위치가 카메라 기준 좌측단으로 이동했다면 오버플로우가 발생한 것. (carry가 생성되는 과정에서 비트가 0으로 세팅되었을 가능성이 큼)
 
 만일 위의 현상이 나타났다면, 오버플로우 발생 기점은 255에 현재 갱신된 x좌표를 더해 실제 좌표를 작성해낼 수 있음.
