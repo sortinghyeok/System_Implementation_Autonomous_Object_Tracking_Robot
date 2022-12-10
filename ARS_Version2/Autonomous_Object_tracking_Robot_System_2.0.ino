@@ -321,7 +321,7 @@ struct ModifedData priority_maker(SensorData sensor_data){
   else if(output_from_line_process.on_or_off == 1){
     Serial.println("LINE TRACKING SELECTED");
     selected_structure.speed = output_from_line_process.speed; 
-    selected_structure.direction = output_from_line_process.direction;
+    selected_structure.direction = output_from_line_process.direction*60;
     selected_structure.priority_code = LINE_TRACKING;
   }
 
@@ -333,7 +333,7 @@ struct ModifedData set_reader(ModifedData selected_structure){
 
   if(selected_structure.speed > 60.0)
   {
-    motor_vector.speed = 0.0;
+    motor_vector.speed = mean_filter()/3.0;
     motor_vector.direction = 0.0;
     Serial.print("reader speed : ");
     Serial.println(motor_vector.speed);
