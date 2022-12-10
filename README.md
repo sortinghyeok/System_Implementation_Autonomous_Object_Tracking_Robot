@@ -1,27 +1,16 @@
-# MCUTrakingSoccerRobot
+# Autonomous Object Tracking Robot의 pixy camera 드라이버 Level 솔루션(Atmega128 등)
 
-업로드된 코드는 그 이름에 따라 통상 경기, 승부차기, 승부차기 방어 로직.
-그러나 승부차기와 승부차기 방어 로직은 환경을 고려한 코드가 없으므로, 통상 경기 로직에 집중하여 설명하도록 함.
-
-## 프로젝트 목표
+## 목표
 - 하드웨어 기기 주변 환경 고려, 특정 색 추적 이후 다음 차순위 태스크를 수행하는 마이너한 수준의 알고리즘 개발 지향
-- 교내 MCU 기반 축구 대회에 참가, 4위 기록
 
 ## 사용한 부품
 - PIXY 카메라, 초음파 센서(HR-SR04), Atmega128 MCU, Arduino board 등...
-
-1. 색체 인식 및 트래킹 영상
-url : https://www.youtube.com/shorts/D-zZEwbS4Z8
-
-2. 통상 코드 업로드시 공 트래킹 및 수비 영상
-url : https://youtu.be/0WiR46VJxNA
 
 ## 사용한 오픈소스 라이브러리
 
 1. Avrdude
 
 ![image](https://user-images.githubusercontent.com/80696846/174485770-6edc566d-c01e-451f-9e70-b5aa753ec5dc.png)
-
 
 - 본래 아두이노의 마이크로프로세서는 avr계열이므로, 코드 업로드를 위해  해당 라이브러리가 필요.
 - 단, 업로드 이전에 usbasp를 통한 부트로더 업로드가 선행되어야 할 것.
@@ -59,4 +48,3 @@ curLoc 변수를 통해 이전까지 갱신되었던 좌표를 임시 저장하�
 
 만일 위의 현상이 나타났다면, 오버플로우 발생 기점은 255에 현재 갱신된 x좌표를 더해 실제 좌표를 작성해낼 수 있음.
 
-//초음파 센서와 관련해서는 추후 추가하기로 함.
