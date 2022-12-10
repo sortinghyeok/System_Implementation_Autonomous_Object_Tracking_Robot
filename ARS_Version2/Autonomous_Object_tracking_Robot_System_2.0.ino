@@ -194,6 +194,8 @@ struct ProcessOutput object_tracking_process(SensorData sensor_data){
 
   uint16_t current_position_x = sensor_data.target_object_info.pos_x;
   float angle = get_angle(current_position_x);
+  if(angle > 30.0 || angle < -30.0)
+	angle = 0;
   float revolving_ratio = angle/30.0;
   //float spin_radius = radius/2 * sin(radians(radius/2));
 
@@ -253,10 +255,10 @@ struct ProcessOutput hazard_prevention_process(SensorData sensor_data){
   float speed = 0.0;
   float revolving_ratio = 0.0;
   float distance = mean_filter();
-  float instance_distance = distance_circular_queue[prev_idx];
+  float current_distance = distance_circular_queue[prev_idx];
   Serial.print("prev distance : ");
   Serial.println(distance);
-  if (distance - 30.0 >= instance_distance)
+  if (distance - 30.0 >= current_distance)
   {
     stack_distance();
     distance = mean_filter();
@@ -284,6 +286,8 @@ struct ProcessOutput hazard_prevention_process(SensorData sensor_data){
 
   uint16_t current_position_x = sensor_data.target_object_info.pos_x;
   float angle = get_angle(current_position_x);
+  if(angle < -30.0 || angle > 30)
+	angle = 0;
   revolving_ratio = angle/30.0;
 
   ProcessOutput process_output;
