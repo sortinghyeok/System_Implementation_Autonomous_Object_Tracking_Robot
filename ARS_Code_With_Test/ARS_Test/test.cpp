@@ -70,18 +70,23 @@ TEST(GetAngleTest, x_300)
 	EXPECT_EQ(getAngle(300), 27.143f);
 }
 
-TEST(ObjectTrackingProcessTest, size_1)
+TEST(ObjectTrackingTest, size_1)
 {
 	SensorData sensorData;
 	sensorData.targetObjectInfo.signature = 1;
 	sensorData.targetObjectInfo.posX = 315;
 	prevAverage = 15.0f;
-	ProcessOutput processOutput = objectTrackingProcess(sensorData, queueLength, prevAverage);
-	EXPECT_TRUE(processOutput.on);
+
+	queueLength = 1;
+	prevAverage = 0;
+
+	float distance = averageFilter(queueLength, prevAverage, getDistance(3000.0f));
+	ProcessOutput processOutput = objectTrackingProcess(sensorData, distance);
+	EXPECT_TRUE(processOutput.onSignal);
 	EXPECT_EQ(processOutput.direction, 1);
 }
 
-TEST(LineTrackingProcessTest, test_1)
+TEST(LineTrackingTest, test_1)
 {
 	SensorData sensorData;
 	sensorData.targetObjectInfo.signature = 1;
@@ -91,7 +96,82 @@ TEST(LineTrackingProcessTest, test_1)
 
 	ProcessOutput processOutput = lineTrackingProcess(sensorData);
 
-	EXPECT_EQ(processOutput.on, false);
+	EXPECT_EQ(processOutput.onSignal, false);
 	EXPECT_EQ(processOutput.direction, 0);
 	EXPECT_EQ(processOutput.speed, 10);
+}
+
+TEST(HazardPreventionTest, test_1)
+{
+	SensorData sensorData;
+	sensorData.targetObjectInfo.signature = 1;
+	sensorData.targetObjectInfo.posX = 315;
+
+	queueLength = 1;
+	prevAverage = 15.0f;
+	float distance = averageFilter(queueLength, prevAverage, getDistance(10000.0f));
+	ProcessOutput processOutput = hazardPreventionProcess(sensorData, distance);
+	
+	EXPECT_EQ(processOutput.onSignal, false);
+	EXPECT_EQ(processOutput.direction, 1);
+	EXPECT_EQ(processOutput.speed, 0);
+}
+
+TEST(HazardPreventionTest, test_2)
+{
+	SensorData sensorData;
+	sensorData.targetObjectInfo.signature = 1;
+	sensorData.targetObjectInfo.posX = 315;
+
+	queueLength = 1;
+	prevAverage = 15.0f;
+	float distance = averageFilter(queueLength, prevAverage, getDistance(1000.0f));
+	ProcessOutput processOutput = hazardPreventionProcess(sensorData, distance);
+
+	EXPECT_EQ(processOutput.onSignal, true);
+	EXPECT_EQ(processOutput.direction, 1);
+	EXPECT_EQ(processOutput.speed, round(5.667f * 1000.0f) / 1000.0f);
+}
+
+TEST(PriorityMaker, test_1)
+{
+	SensorData sensorData;
+	//float distance = 20.0f;
+	ProcessOutput outputFromObjectProcess;
+	outputFromObjectProcess.onSignal = true;
+
+	ProcessOutput outputFromLineProcess;
+	outputFromLineProcess.onSignal = true;
+
+	ProcessOutput outputFromHazardProcess;
+	outputFromHazardProcess.onSignal = true;
+
+	ModifiedData modifiedData = priorityMaker(outputFromObjectProcess, outputFromLineProcess, outputFromHazardProcess);
+	EXPECT_EQ(modifiedData.priority_code, HAZARD_PREVENTION);
+}
+
+TEST(SetReader, test_1)
+{
+	ModifiedData selectedStructure;
+	selectedStructure.direction = 1;
+	selectedStructure.priority_code = HAZARD_PREVENTION;
+	selectedStructure.speed = 30.0f;
+
+	ModifiedData motorVector = setReader(selectedStructure);
+
+	EXPECT_EQ(motorVector.speed, selectedStructure.speed);
+	EXPECT_EQ(motorVector.direction, selectedStructure.direction);
+	EXPECT_EQ(motorVector.priority_code, selectedStructure.priority_code);
+}
+
+TEST(ActiveMotorInterface, test_1)
+{
+	ModifiedData motorVector;
+	motorVector.speed = 100.0f;
+	motorVector.direction = 0.1f;
+	AppliedData appliedData = activeMotorInterface(motorVector);
+
+	EXPECT_EQ(appliedData.leftWheel, REGULAR_ROTATION);
+	EXPECT_EQ(appliedData.rightWheel, REGULAR_ROTATION);
+	EXPECT_EQ(appliedData.appliedWheelSpeed, 10);
 }

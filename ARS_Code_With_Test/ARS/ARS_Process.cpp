@@ -71,7 +71,7 @@ float getAngle(int posX) {
 	}
 }
 
-ProcessOutput objectTrackingProcess(SensorData sensorData, int& queueLength, float prevAverage) {
+ProcessOutput objectTrackingProcess(SensorData sensorData, float distance) {
 	bool onSignal = false;
 	if (sensorData.targetObjectInfo.signature == 1)
 		onSignal = true;
@@ -86,7 +86,7 @@ ProcessOutput objectTrackingProcess(SensorData sensorData, int& queueLength, flo
 	//float spin_radius = radius/2 * sin(radians(radius/2));
 
 	ProcessOutput processOutput;
-	float distance = averageFilter(queueLength, prevAverage, getDistance(3000.0f));
+
 	if (distance < 20.0)
 	{
 		onSignal = false;
@@ -105,7 +105,7 @@ ProcessOutput objectTrackingProcess(SensorData sensorData, int& queueLength, flo
 	}
 
 	processOutput.direction = revolvingRatio;
-	processOutput.on = onSignal;
+	processOutput.onSignal = onSignal;
 
 	return processOutput;
 }
@@ -130,8 +130,130 @@ struct ProcessOutput lineTrackingProcess(SensorData sensor_data) {
 
 	float revolving_ratio = (float)direction / 3.0;
 	processOutput.direction = revolving_ratio;
-	processOutput.on = onSignal;
+	processOutput.onSignal = onSignal;
 	processOutput.speed = 10.0;
 
 	return processOutput;
+}
+
+ProcessOutput hazardPreventionProcess(SensorData sensor_data, float distance) {
+	bool onSignal = false;
+	float speed = 0.0;
+	float revolving_ratio = 0.0;
+
+	if (distance <= 20.0)
+	{
+		if (distance >= 10.0)
+		{
+			speed = distance / 3.0;
+			onSignal = true;
+		}
+	}
+	else if (distance <= 10.0)
+	{
+		speed = 0.0;
+		onSignal = true;
+	}
+	else
+	{
+		onSignal = false;
+	}
+
+	int currentPositionX = sensor_data.targetObjectInfo.posX;
+	float angle = getAngle(currentPositionX);
+	if (angle < -30.0f || angle > 30.0f)
+		angle = 0;
+	revolving_ratio = angle / 30.0f;
+
+	ProcessOutput process_output;
+	process_output.direction = revolving_ratio;
+	process_output.onSignal = onSignal;
+	process_output.speed = round(speed * 1000.0f) / 1000.0f ;
+	
+	return process_output;
+}
+
+ModifiedData priorityMaker(ProcessOutput outputFromObjectProcess, ProcessOutput outputFromLineProcess, ProcessOutput outputFromHazardProcess) {
+
+	ModifiedData selectedStructure;
+	if (outputFromHazardProcess.onSignal == true)
+	{
+		selectedStructure.speed = outputFromHazardProcess.speed;
+		selectedStructure.direction = outputFromHazardProcess.direction;
+		selectedStructure.priority_code = HAZARD_PREVENTION;
+	}
+	else if (outputFromObjectProcess.onSignal == true)
+	{
+		selectedStructure.speed = outputFromObjectProcess.speed;
+		selectedStructure.direction = outputFromObjectProcess.direction;
+		selectedStructure.priority_code = OBJECT_TRACKING;
+	}
+	else if (outputFromLineProcess.onSignal == true) {
+		selectedStructure.speed = outputFromLineProcess.speed;
+		selectedStructure.direction = outputFromLineProcess.direction * 60;
+		selectedStructure.priority_code = LINE_TRACKING;
+	}
+	else
+	{
+		selectedStructure.speed = 0;
+		selectedStructure.direction = 0;
+		selectedStructure.priority_code = REMOTE_OFF;
+	}
+
+	return selectedStructure;
+}
+
+ModifiedData setReader(ModifiedData selectedStructure) {
+	ModifiedData motorVector;
+	if (selectedStructure.speed > 60.0)
+	{
+		motorVector.speed = getDistance(3000.0f);
+		motorVector.direction = 0.0;
+	}
+	else
+	{
+		motorVector.speed = selectedStructure.speed;
+		motorVector.direction = selectedStructure.direction;
+	}
+
+	if (selectedStructure.priority_code > 2 && selectedStructure.priority_code < 0)
+	{
+		motorVector.priority_code = REMOTE_OFF;
+	}
+	else
+	{
+		motorVector.priority_code = selectedStructure.priority_code;
+	}
+
+	return motorVector;
+}
+
+AppliedData activeMotorInterface(ModifiedData motorVector)
+{
+	AppliedData appliedData;
+	float speed = motorVector.speed;
+	float direction = motorVector.direction;
+
+	if (direction <= 0.1f)
+	{
+		if (direction >= -0.1f)
+		{
+			appliedData.leftWheel = REGULAR_ROTATION;
+			appliedData.rightWheel = REGULAR_ROTATION;
+		}
+	}
+	else if (direction < 0)
+	{
+		appliedData.leftWheel = REVERSE_ROTATION;
+		appliedData.rightWheel = REGULAR_ROTATION;
+	}
+	else
+	{
+		appliedData.leftWheel = REGULAR_ROTATION;
+		appliedData.rightWheel = REVERSE_ROTATION;
+	}
+
+	appliedData.appliedWheelSpeed = speed * abs(direction);
+
+	return appliedData;
 }

@@ -41,11 +41,17 @@ struct SensorData {
 struct ProcessOutput {
 	float speed;
 	float direction;
-	bool on;
+	bool onSignal;
 };
 
-struct ModifedData {
+struct ModifiedData {
 	float speed;
 	float direction;
 	int priority_code;
+};
+
+struct AppliedData {
+	int leftWheel;
+	int rightWheel;
+	float appliedWheelSpeed;
 };
