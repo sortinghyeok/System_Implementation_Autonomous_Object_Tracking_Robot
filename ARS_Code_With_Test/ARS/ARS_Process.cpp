@@ -3,12 +3,17 @@
 
 float getDistance(float returnTime)
 {
+	if (returnTime < 0)
+		return -1;
+
 	return ((float)(340.0f * returnTime) / 10000.0f) / 2.0f;
 }
 
-void stackDistance(float* distances, int& currentIdx)
+void fovDistanceProcess(float* distances, int& currentIdx)
 {
 	srand((unsigned int)time(NULL));
+	if (currentIdx >= queue_size || currentIdx < 0)
+		currentIdx = 0;
 	for (int i = 0; i < queue_size; i++)
 	{
 		distances[currentIdx] = getDistance((rand()*100)%60+1);
@@ -16,8 +21,14 @@ void stackDistance(float* distances, int& currentIdx)
 	}
 }
 
-float averageFilter(int& length, float prevAverage, float newValue)
+float meanFilter(int& length, float prevAverage, float newValue)
 {
+	if (length <= 0 || length >= 10)
+	{
+		length = 0;
+		return 0;
+	}
+		
 	if (length == 1) {
 		length++;
 		return newValue;
@@ -25,14 +36,14 @@ float averageFilter(int& length, float prevAverage, float newValue)
 
 	float oldWeight = (length - 1) / (float)length;
 	float newWeight = 1 / (float)length;
-	float res = (prevAverage * oldWeight) + (newValue * newWeight);
+	float filteredDistance = (prevAverage * oldWeight) + (newValue * newWeight);
 
 	if (length < 10)
 		length++;
-	return res;
+	return filteredDistance;
 }
 
-SensorData sensorDataProcess(float* fovDistances, int& currentIdx)
+SensorData sensorDataProcess(float fovDistances[], int& currentIdx)
 {
 	SensorData sensorData;
 	Lines linesInfo = Lines();
@@ -43,14 +54,16 @@ SensorData sensorDataProcess(float* fovDistances, int& currentIdx)
 	sensorData.targetObjectInfo = targetObjectInfo;
 	sensorData.fovDistances = fovDistances;
 
-	int& currentIdxLoc = currentIdx;
-	/*sensor_data.target_object_info = target_camera_data_parser();*/
-	stackDistance(fovDistances, currentIdxLoc);
+	fovDistanceProcess(fovDistances, currentIdx);
 	return sensorData;
 }
 
 float getAngle(int posX) {
 	int direction;
+
+	if (posX > 315 || posX < 0)
+		return 0;
+
 	float center = (float)fov_center;
 	if ((float)posX <= center)
 		direction = -1;
@@ -62,21 +75,17 @@ float getAngle(int posX) {
 	if (angle > 30.0f)
 	{
 		angle = angle - 30.0f;
-		return round(angle * 1.0f * 1000.0f) / 1000.0f;
+		return round(angle * 1.0f * 1000) / 1000;
 	}
 	else
 	{
 		angle = (30.0f - angle);
-		return round(angle * -1.0f * 1000.0f) / 1000.0f;
+		return round(angle * -1.0f * 1000) / 1000;
 	}
 }
 
 ProcessOutput objectTrackingProcess(SensorData sensorData, float distance) {
 	bool onSignal = false;
-	if (sensorData.targetObjectInfo.signature == 1)
-		onSignal = true;
-	else
-		onSignal = false;
 
 	int currentPositionX = sensorData.targetObjectInfo.posX;
 	float angle = getAngle(currentPositionX);
@@ -103,6 +112,11 @@ ProcessOutput objectTrackingProcess(SensorData sensorData, float distance) {
 		onSignal = true;
 		processOutput.speed = distance / 3;
 	}
+
+	if (sensorData.targetObjectInfo.signature == 1)
+		onSignal = true;
+	else
+		onSignal = false;
 
 	processOutput.direction = revolvingRatio;
 	processOutput.onSignal = onSignal;
@@ -148,11 +162,11 @@ ProcessOutput hazardPreventionProcess(SensorData sensor_data, float distance) {
 			speed = distance / 3.0;
 			onSignal = true;
 		}
-	}
-	else if (distance <= 10.0)
-	{
-		speed = 0.0;
-		onSignal = true;
+		else if (distance <= 10.0)
+		{
+			speed = 0.0;
+			onSignal = true;
+		}
 	}
 	else
 	{
@@ -180,24 +194,24 @@ ModifiedData priorityMaker(ProcessOutput outputFromObjectProcess, ProcessOutput 
 	{
 		selectedStructure.speed = outputFromHazardProcess.speed;
 		selectedStructure.direction = outputFromHazardProcess.direction;
-		selectedStructure.priority_code = HAZARD_PREVENTION;
+		selectedStructure.priorityCode = HAZARD_PREVENTION;
 	}
 	else if (outputFromObjectProcess.onSignal == true)
 	{
 		selectedStructure.speed = outputFromObjectProcess.speed;
 		selectedStructure.direction = outputFromObjectProcess.direction;
-		selectedStructure.priority_code = OBJECT_TRACKING;
+		selectedStructure.priorityCode = OBJECT_TRACKING;
 	}
 	else if (outputFromLineProcess.onSignal == true) {
 		selectedStructure.speed = outputFromLineProcess.speed;
 		selectedStructure.direction = outputFromLineProcess.direction * 60;
-		selectedStructure.priority_code = LINE_TRACKING;
+		selectedStructure.priorityCode = LINE_TRACKING;
 	}
 	else
 	{
 		selectedStructure.speed = 0;
 		selectedStructure.direction = 0;
-		selectedStructure.priority_code = REMOTE_OFF;
+		selectedStructure.priorityCode = REMOTE_OFF;
 	}
 
 	return selectedStructure;
@@ -207,7 +221,7 @@ ModifiedData setReader(ModifiedData selectedStructure) {
 	ModifiedData motorVector;
 	if (selectedStructure.speed > 60.0)
 	{
-		motorVector.speed = getDistance(3000.0f);
+		motorVector.speed = TEMPORARY_PREV_DISTANCE;
 		motorVector.direction = 0.0;
 	}
 	else
@@ -216,13 +230,13 @@ ModifiedData setReader(ModifiedData selectedStructure) {
 		motorVector.direction = selectedStructure.direction;
 	}
 
-	if (selectedStructure.priority_code > 2 && selectedStructure.priority_code < 0)
+	if (selectedStructure.priorityCode > 2 && selectedStructure.priorityCode < 0)
 	{
-		motorVector.priority_code = REMOTE_OFF;
+		motorVector.priorityCode = REMOTE_OFF;
 	}
 	else
 	{
-		motorVector.priority_code = selectedStructure.priority_code;
+		motorVector.priorityCode = selectedStructure.priorityCode;
 	}
 
 	return motorVector;

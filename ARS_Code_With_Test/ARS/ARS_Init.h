@@ -1,4 +1,7 @@
 #pragma once
+
+#define TEMPORARY_PREV_DISTANCE 30
+
 struct Lines {
 	int lineLeft;
 	int lineMiddle;
@@ -47,7 +50,7 @@ struct ProcessOutput {
 struct ModifiedData {
 	float speed;
 	float direction;
-	int priority_code;
+	int priorityCode;
 };
 
 struct AppliedData {
@@ -55,3 +58,4 @@ struct AppliedData {
 	int rightWheel;
 	float appliedWheelSpeed;
 };
+

@@ -13,9 +13,9 @@
 #define REVERSE_ROTATION 2
 
 float getDistance(float returnTime);
-void stackDistance(float* distances, int& currentIdx);
-float averageFilter(int& length, float prevAverage, float newValue);
-SensorData sensorDataProcess(float* fovDistances, int& currentIdx);
+void fovDistanceProcess(float* distances, int& currentIdx);
+float meanFilter(int& length, float prevAverage, float newValue);
+SensorData sensorDataProcess(float fovDistances[], int& currentIdx);
 float getAngle(int posX);
 ProcessOutput objectTrackingProcess(SensorData sensorData, float distance);
 ProcessOutput lineTrackingProcess(SensorData sensor_data);
