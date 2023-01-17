@@ -1,6 +1,6 @@
-# pixy Camera Driver Level 솔루션(Atmega128 등)
+프로젝트와 관련된 전반적인 내용은 Repository 내부 ppt 파일을 확인해주시기 바랍니다.
 
-## 목표
+# pixy Camera Driver Level 솔루션(Atmega128 등)
 - pixy library의 사용 불가시 솔루션 제시
 - 하드웨어 기기 주변 환경 고려, 특정 색 추적 이후 다음 차순위 태스크를 수행하는 마이너한 수준의 알고리즘 개발 지향
 
